@@ -11,17 +11,17 @@ package net.mamoe.mirai.internal.network.impl.netty
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.delay
 import net.mamoe.mirai.event.Event
 import net.mamoe.mirai.event.broadcast
 import net.mamoe.mirai.event.events.BotOfflineEvent
 import net.mamoe.mirai.event.events.BotOnlineEvent
 import net.mamoe.mirai.event.events.BotReloginEvent
-import net.mamoe.mirai.event.nextEvent
 import net.mamoe.mirai.internal.network.components.SsoProcessor
-import net.mamoe.mirai.internal.network.handler.NetworkHandler.State
+import net.mamoe.mirai.internal.network.framework.eventDispatcher
+import net.mamoe.mirai.internal.network.framework.ssoProcessor
 import net.mamoe.mirai.internal.network.handler.NetworkHandler.State.*
 import net.mamoe.mirai.internal.test.assertEventBroadcasts
+import net.mamoe.mirai.internal.test.assertEventNotBroadcast
 import net.mamoe.mirai.internal.test.runBlockingUnit
 import org.junit.jupiter.api.TestInstance
 import java.util.concurrent.atomic.AtomicReference
@@ -67,7 +67,7 @@ internal class NettyHandlerEventTest : AbstractNettyNHTest() {
         assertEventBroadcasts<BotOfflineEvent>(1) {
             network.setStateClosed()
             eventDispatcher.joinBroadcast()
-            assertEquals(State.CLOSED, network.state)
+            assertState(CLOSED)
         }
     }
 
@@ -154,20 +154,31 @@ internal class NettyHandlerEventTest : AbstractNettyNHTest() {
     }
 
     @Test
-    fun `BotOffline from CONNECTING TO CLOSED`() = runBlockingUnit {
+    fun `no BotOffline from CONNECTING TO CLOSED`() = runBlockingUnit {
         network.setStateConnecting()
         eventDispatcher.joinBroadcast() // `login` launches a job which broadcasts the event
-        assertEventBroadcasts<Event>(1) {
+        assertEventNotBroadcast {
             network.setStateClosed()
             network.resumeConnection()
-            // TODO: fixme: No event broadcast
-            // eventDispatcher.joinBroadcast()
-            nextEvent<Event>(10000) { true }
-            delay(10000)
-        }.let { event ->
-            assertEquals(BotOfflineEvent.Active::class, event[0]::class)
+            eventDispatcher.joinBroadcast()
         }
     }
+
+    @Test
+    fun `BotReloginEvent after successful reconnection`() = runBlockingUnit {
+        assertEventBroadcasts<BotReloginEvent> {
+            assertState(INITIALIZED)
+            bot.login()
+            assertState(OK)
+            network.ssoProcessor.firstLoginSucceed = true
+            network.setStateConnecting()
+            network.resumeConnection()
+            assertState(OK)
+            network.eventDispatcher.joinBroadcast()
+            assertState(OK)
+        }
+    }
+
 //
 //    @Test
 //    fun `no event from INITIALIZED TO OK`() = runBlockingUnit {
