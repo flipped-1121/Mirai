@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.job
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.internal.network.Packet
 import net.mamoe.mirai.internal.network.components.BotInitProcessor
@@ -150,6 +151,10 @@ internal interface NetworkHandler : CoroutineScope {
      * Closes this handler gracefully (i.e. asynchronously).
      */
     fun close(cause: Throwable?)
+    suspend fun closeAndJoin(cause: Throwable?) {
+        close(cause)
+        coroutineContext.job.join()
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // compatibility

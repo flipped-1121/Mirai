@@ -24,12 +24,10 @@ import net.mamoe.mirai.internal.test.assertEventNotBroadcast
 import net.mamoe.mirai.internal.test.runBlockingUnit
 import org.junit.jupiter.api.TestInstance
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 
-@Ignore
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 internal class NettyHandlerEventTest : AbstractNettyNHTest() {
     @Test
@@ -130,7 +128,7 @@ internal class NettyHandlerEventTest : AbstractNettyNHTest() {
         assertState(OK)
         eventDispatcher.joinBroadcast() // `login` launches a job which broadcasts the event
         assertEventBroadcasts<Event>(1) {
-            network.close(null)
+            network.closeAndJoin(null)
             assertState(CLOSED)
             eventDispatcher.joinBroadcast()
         }.let { event ->
