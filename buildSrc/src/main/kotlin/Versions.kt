@@ -18,8 +18,8 @@ object Versions {
     const val console = project
     const val consoleTerminal = project
 
-    const val kotlinCompiler = "1.5.10"
-    const val kotlinStdlib = "1.5.10"
+    const val kotlinCompiler = "1.5.20-RC"
+    const val kotlinStdlib = "1.5.20-RC"
     const val dokka = "1.4.32"
 
     const val coroutines = "1.5.0"
